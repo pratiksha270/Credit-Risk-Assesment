@@ -15,23 +15,25 @@ This app predicts the **risk of loan default** using a machine learning model (R
 ### 🧾 How it works
 - **Prior Risk**: Risk estimated based on loan details using ML model.
 - **Updated Risk**: Adjusted risk after missed EMI using Bayes' Theorem.
-
-### 📝 What Each Field Means:
-- **Loan Amount ($)**: The principal loan amount requested.
-- **Term**: Duration of the loan (36 or 60 months).
-- **Interest Rate (%)**: Annual interest rate on the loan.
-- **Installment ($)**: Monthly payment amount.
-- **Grade**: Credit grade assigned (A to G).
-- **Employment Length**: Number of years the applicant has been employed.
-- **Home Ownership**: Applicant's home ownership status.
-- **Annual Income ($)**: Yearly income declared by the applicant.
-- **Purpose of Loan**: Reason the applicant is requesting the loan.
-- **Debt-to-Income Ratio**: Ratio of debt to income (lower is better).
-- **Delinquencies (past 2 yrs)**: Number of past payment defaults.
-- **Open Credit Lines**: Active lines of credit.
-- **Revolving Utilization (%)**: Credit utilization percentage.
-- **Total Credit Accounts**: Total number of credit accounts.
 """)
+
+with st.expander("🧠 Field Descriptions"):
+    st.markdown("""
+    - **Loan Amount ($)**: The principal loan amount requested.
+    - **Term**: Duration of the loan (36 or 60 months).
+    - **Interest Rate (%)**: Annual interest rate on the loan.
+    - **Installment ($)**: Monthly payment amount.
+    - **Grade**: Credit grade assigned (A to G).
+    - **Employment Length**: Number of years the applicant has been employed.
+    - **Home Ownership**: Applicant's home ownership status.
+    - **Annual Income ($)**: Yearly income declared by the applicant.
+    - **Purpose of Loan**: Reason the applicant is requesting the loan.
+    - **Debt-to-Income Ratio**: Ratio of debt to income.
+    - **Delinquencies (past 2 yrs)**: Number of past payment defaults.
+    - **Open Credit Lines**: Active lines of credit.
+    - **Revolving Utilization (%)**: Credit utilization percentage.
+    - **Total Credit Accounts**: Total number of credit accounts.
+    """)
 
 st.header("📋 Loan Application Form")
 
@@ -95,16 +97,6 @@ if st.button("📊 Predict Risk"):
         st.subheader("📊 Prediction Results")
         st.success(f"🔵 Prior Risk (Random Forest): {prior_risk:.3f}")
         st.info(f"🟠 Updated Risk (Bayesian): {updated_risk:.3f}")
-
-        st.markdown("""
----
-### ℹ️ About the Prediction
-- **Prior Risk** is calculated using a Random Forest model trained on historical loan data.
-- **Updated Risk** adjusts this estimate using Bayes' Theorem based on whether an EMI was missed.
-- This method offers both **historical model accuracy** and **real-time behavioral adjustment**.
-
-This app is for demo and educational purposes only.
-""")
 
     except Exception as e:
         st.error(f"Prediction failed: {e}")
