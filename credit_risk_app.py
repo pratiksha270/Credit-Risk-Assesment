@@ -3,12 +3,8 @@ import joblib
 import numpy as np
 import pandas as pd
 
-try:
-    rf = joblib.load("rf_model.joblib")
-    label_encoders = joblib.load("label_encoders.joblib")
-except Exception as e:
-    st.error(f"❌ Model load failed: {e}")
-    st.stop()
+rf = joblib.load("rf_model.joblib")
+label_encoders = joblib.load("label_encoders.joblib")
 
 st.set_page_config(page_title="Credit Risk Assessment App")
 st.title("💳 Credit Risk Assessment App")
@@ -21,7 +17,7 @@ This app predicts the **risk of loan default** using a machine learning model (R
 - **Updated Risk**: Adjusted risk after missed EMI using Bayes' Theorem.
 """)
 
-with st.expander("What Do These Fields Mean?"):
+with st.expander("🧠 What do these fields mean?"):
     st.markdown("""
     - **Loan Amount ($)**: The principal loan amount requested.
     - **Term**: Duration of the loan (36 or 60 months).
@@ -39,7 +35,7 @@ with st.expander("What Do These Fields Mean?"):
     - **Total Credit Accounts**: Total number of credit accounts.
     """)
 
-st.header("Loan Application Form")
+st.header("📋 Loan Application Form")
 
 loan_amnt = st.number_input("Loan Amount ($)", min_value=500, max_value=50000, step=500)
 term = st.selectbox("Term", options=["36 months", "60 months"])
@@ -80,27 +76,35 @@ if st.button("📊 Predict Risk"):
     }
     df_input = pd.DataFrame([input_dict])
 
-    try:
+    # Validate labels
+    mappings_ok = True
+    for col in ['term','grade','emp_length','home_ownership','purpose']:
+        if df_input[col].iloc[0] not in label_encoders[col].classes_:
+            st.error(f"Invalid input for {col}: '{df_input[col].iloc[0]}' not in encoder classes.")
+            mappings_ok = False
+
+    if mappings_ok:
         for col in ['term','grade','emp_length','home_ownership','purpose']:
             le = label_encoders[col]
             df_input[col] = le.transform(df_input[col])
 
-        prior_risk = rf.predict_proba(df_input)[0][1]
+        try:
+            prior_risk = rf.predict_proba(df_input)[0][1]
 
-        P_prior = prior_risk
-        P_miss_given_default = 0.85
-        P_miss_given_no_default = 0.25
+            P_prior = prior_risk
+            P_miss_given_default = 0.85
+            P_miss_given_no_default = 0.25
 
-        if missed_emi == "Yes":
-            numerator = P_miss_given_default * P_prior
-            denominator = (P_miss_given_default * P_prior) + (P_miss_given_no_default * (1 - P_prior))
-            updated_risk = numerator / denominator
-        else:
-            updated_risk = prior_risk
+            if missed_emi == "Yes":
+                numerator = P_miss_given_default * P_prior
+                denominator = (P_miss_given_default * P_prior) + (P_miss_given_no_default * (1 - P_prior))
+                updated_risk = numerator / denominator
+            else:
+                updated_risk = prior_risk
 
-        st.subheader("📊 Prediction Results")
-        st.success(f"🔵 Prior Risk (Random Forest): {prior_risk:.3f}")
-        st.info(f"🟠 Updated Risk (Bayesian): {updated_risk:.3f}")
+            st.subheader("📊 Prediction Results")
+            st.success(f"🔵 Prior Risk (Random Forest): {prior_risk:.3f}")
+            st.info(f"🟠 Updated Risk (Bayesian): {updated_risk:.3f}")
 
-    except Exception as e:
-        st.error(f"Prediction failed: {e}")
+        except Exception as e:
+            st.error(f"Prediction failed: {e}")
