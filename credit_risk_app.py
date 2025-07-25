@@ -17,22 +17,22 @@ This app predicts the **risk of loan default** using a machine learning model (R
 - **Updated Risk**: Adjusted risk after missed EMI using Bayes' Theorem.
 """)
 
-with st.expander("🧠 What do these fields mean?"):
+with st.expander("🧠 What do the fields mean?"):
     st.markdown("""
-    - **Loan Amount ($)**: The principal loan amount requested.
-    - **Term**: Duration of the loan (36 or 60 months).
-    - **Interest Rate (%)**: Annual interest rate on the loan.
-    - **Installment ($)**: Monthly payment amount.
-    - **Grade**: Credit grade assigned (A to G).
-    - **Employment Length**: Number of years the applicant has been employed.
-    - **Home Ownership**: Applicant's home ownership status.
-    - **Annual Income ($)**: Yearly income declared by the applicant.
-    - **Purpose of Loan**: Reason the applicant is requesting the loan.
-    - **Debt-to-Income Ratio**: Ratio of debt to income.
-    - **Delinquencies (past 2 yrs)**: Number of past payment defaults.
-    - **Open Credit Lines**: Active lines of credit.
-    - **Revolving Utilization (%)**: Credit utilization percentage.
-    - **Total Credit Accounts**: Total number of credit accounts.
+    - **Loan Amount ($)**: Total amount the applicant wants to borrow.
+    - **Term**: Duration to repay the loan.
+    - **Interest Rate (%)**: Yearly interest rate charged.
+    - **Installment ($)**: Monthly EMI to be paid.
+    - **Grade**: Creditworthiness level (A=Best).
+    - **Employment Length**: Number of years employed.
+    - **Home Ownership**: Type of residential ownership.
+    - **Annual Income ($)**: Total annual income.
+    - **Purpose of Loan**: Reason for loan (car, education, etc).
+    - **Debt-to-Income Ratio**: Debt burden against income.
+    - **Delinquencies (past 2 yrs)**: Past due payments count.
+    - **Open Credit Lines**: Active credit lines.
+    - **Revolving Utilization (%)**: Usage of revolving credit.
+    - **Total Credit Accounts**: Number of open+closed accounts.
     """)
 
 st.header("📋 Loan Application Form")
@@ -76,35 +76,42 @@ if st.button("📊 Predict Risk"):
     }
     df_input = pd.DataFrame([input_dict])
 
-    # Validate labels
-    mappings_ok = True
-    for col in ['term','grade','emp_length','home_ownership','purpose']:
-        if df_input[col].iloc[0] not in label_encoders[col].classes_:
-            st.error(f"Invalid input for {col}: '{df_input[col].iloc[0]}' not in encoder classes.")
-            mappings_ok = False
+    df_input['term'] = df_input['term'].map({'36 months': '36', '60 months': '60'})
+    df_input['emp_length'] = df_input['emp_length'].map({
+        '< 1 year': '< 1 year',
+        '1 year': '1 year',
+        '2 years': '2 years',
+        '3 years': '3 years',
+        '4 years': '4 years',
+        '5 years': '5 years',
+        '6 years': '6 years',
+        '7 years': '7 years',
+        '8 years': '8 years',
+        '9 years': '9 years',
+        '10+ years': '10+ years'
+    })
 
-    if mappings_ok:
+    try:
         for col in ['term','grade','emp_length','home_ownership','purpose']:
             le = label_encoders[col]
             df_input[col] = le.transform(df_input[col])
 
-        try:
-            prior_risk = rf.predict_proba(df_input)[0][1]
+        prior_risk = rf.predict_proba(df_input)[0][1]
 
-            P_prior = prior_risk
-            P_miss_given_default = 0.85
-            P_miss_given_no_default = 0.25
+        P_prior = prior_risk
+        P_miss_given_default = 0.85
+        P_miss_given_no_default = 0.25
 
-            if missed_emi == "Yes":
-                numerator = P_miss_given_default * P_prior
-                denominator = (P_miss_given_default * P_prior) + (P_miss_given_no_default * (1 - P_prior))
-                updated_risk = numerator / denominator
-            else:
-                updated_risk = prior_risk
+        if missed_emi == "Yes":
+            numerator = P_miss_given_default * P_prior
+            denominator = (P_miss_given_default * P_prior) + (P_miss_given_no_default * (1 - P_prior))
+            updated_risk = numerator / denominator
+        else:
+            updated_risk = prior_risk
 
-            st.subheader("📊 Prediction Results")
-            st.success(f"🔵 Prior Risk (Random Forest): {prior_risk:.3f}")
-            st.info(f"🟠 Updated Risk (Bayesian): {updated_risk:.3f}")
+        st.subheader("📊 Prediction Results")
+        st.success(f"🔵 Prior Risk (Random Forest): {prior_risk:.3f}")
+        st.info(f"🟠 Updated Risk (Bayesian): {updated_risk:.3f}")
 
-        except Exception as e:
-            st.error(f"Prediction failed: {e}")
+    except Exception as e:
+        st.error(f"Prediction failed: {e}")
