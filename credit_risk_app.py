@@ -21,7 +21,7 @@ This app predicts the **risk of loan default** using a machine learning model (R
 - **Updated Risk**: Adjusted risk after missed EMI using Bayes' Theorem.
 """)
 
-with st.expander("🧠 What Do These Fields Mean?"):
+with st.expander("What Do These Fields Mean?"):
     st.markdown("""
     - **Loan Amount ($)**: The principal loan amount requested.
     - **Term**: Duration of the loan (36 or 60 months).
@@ -39,7 +39,7 @@ with st.expander("🧠 What Do These Fields Mean?"):
     - **Total Credit Accounts**: Total number of credit accounts.
     """)
 
-st.header("📋 Loan Application Form")
+st.header("Loan Application Form")
 
 loan_amnt = st.number_input("Loan Amount ($)", min_value=500, max_value=50000, step=500)
 term = st.selectbox("Term", options=["36 months", "60 months"])
