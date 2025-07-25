@@ -17,22 +17,22 @@ This app predicts the **risk of loan default** using a machine learning model (R
 - **Updated Risk**: Adjusted risk after missed EMI using Bayes' Theorem.
 """)
 
-with st.expander("🧠 What do the fields mean?"):
+with st.expander("🧠 What do these fields mean?"):
     st.markdown("""
-    - **Loan Amount ($)**: Total amount the applicant wants to borrow.
-    - **Term**: Duration to repay the loan.
-    - **Interest Rate (%)**: Yearly interest rate charged.
-    - **Installment ($)**: Monthly EMI to be paid.
-    - **Grade**: Creditworthiness level (A=Best).
-    - **Employment Length**: Number of years employed.
-    - **Home Ownership**: Type of residential ownership.
-    - **Annual Income ($)**: Total annual income.
-    - **Purpose of Loan**: Reason for loan (car, education, etc).
-    - **Debt-to-Income Ratio**: Debt burden against income.
-    - **Delinquencies (past 2 yrs)**: Past due payments count.
-    - **Open Credit Lines**: Active credit lines.
-    - **Revolving Utilization (%)**: Usage of revolving credit.
-    - **Total Credit Accounts**: Number of open+closed accounts.
+    - **Loan Amount ($)**: The principal loan amount requested.
+    - **Term**: Duration of the loan (36 or 60 months).
+    - **Interest Rate (%)**: Annual interest rate on the loan.
+    - **Installment ($)**: Monthly payment amount.
+    - **Grade**: Credit grade assigned (A to G).
+    - **Employment Length**: Number of years the applicant has been employed.
+    - **Home Ownership**: Applicant's home ownership status.
+    - **Annual Income ($)**: Yearly income declared by the applicant.
+    - **Purpose of Loan**: Reason the applicant is requesting the loan.
+    - **Debt-to-Income Ratio**: Ratio of debt to income.
+    - **Delinquencies (past 2 yrs)**: Number of past payment defaults.
+    - **Open Credit Lines**: Active lines of credit.
+    - **Revolving Utilization (%)**: Credit utilization percentage.
+    - **Total Credit Accounts**: Total number of credit accounts.
     """)
 
 st.header("📋 Loan Application Form")
@@ -43,11 +43,12 @@ int_rate = st.slider("Interest Rate (%)", min_value=5.0, max_value=30.0, step=0.
 installment = st.number_input("Installment ($)", min_value=50, max_value=2000)
 grade = st.selectbox("Grade", options=['A','B','C','D','E','F','G'])
 emp_length = st.selectbox("Employment Length", options=["< 1 year","1 year","2 years","3 years","4 years","5 years","6 years","7 years","8 years","9 years","10+ years"])
-home_ownership = st.selectbox("Home Ownership", options=['MORTGAGE','RENT','OWN','OTHER'])
+home_ownership = st.selectbox("Home Ownership", options=['MORTGAGE','RENT','OWN','OTHER','ANY','NONE'])
 annual_inc = st.number_input("Annual Income ($)", min_value=10000, max_value=500000, step=1000)
 purpose = st.selectbox("Purpose of Loan", options=[
     'credit_card', 'car', 'small_business', 'wedding', 'debt_consolidation',
-    'home_improvement', 'major_purchase', 'medical', 'vacation', 'house', 'moving'
+    'home_improvement', 'major_purchase', 'medical', 'vacation', 'house', 'moving',
+    'other', 'educational', 'renewable_energy'
 ])
 dti = st.slider("Debt-to-Income Ratio", min_value=0.0, max_value=50.0, step=0.1)
 delinq_2yrs = st.number_input("Delinquencies (past 2 yrs)", min_value=0, max_value=10)
@@ -76,26 +77,12 @@ if st.button("📊 Predict Risk"):
     }
     df_input = pd.DataFrame([input_dict])
 
-    df_input['term'] = df_input['term'].map({'36 months': '36', '60 months': '60'})
-    df_input['emp_length'] = df_input['emp_length'].map({
-        '< 1 year': '< 1 year',
-        '1 year': '1 year',
-        '2 years': '2 years',
-        '3 years': '3 years',
-        '4 years': '4 years',
-        '5 years': '5 years',
-        '6 years': '6 years',
-        '7 years': '7 years',
-        '8 years': '8 years',
-        '9 years': '9 years',
-        '10+ years': '10+ years'
-    })
+    for col in ['term','grade','emp_length','home_ownership','purpose']:
+        le = label_encoders[col]
+        df_input[col] = df_input[col].apply(lambda x: x.strip() if isinstance(x, str) else x)
+        df_input[col] = le.transform(df_input[col])
 
     try:
-        for col in ['term','grade','emp_length','home_ownership','purpose']:
-            le = label_encoders[col]
-            df_input[col] = le.transform(df_input[col])
-
         prior_risk = rf.predict_proba(df_input)[0][1]
 
         P_prior = prior_risk
