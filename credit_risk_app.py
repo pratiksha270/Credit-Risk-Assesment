@@ -3,8 +3,12 @@ import joblib
 import numpy as np
 import pandas as pd
 
-rf = joblib.load("rf_model.joblib")
-label_encoders = joblib.load("label_encoders.joblib")
+try:
+    rf = joblib.load("rf_model.joblib")
+    label_encoders = joblib.load("label_encoders.joblib")
+except Exception as e:
+    st.error(f"❌ Model load failed: {e}")
+    st.stop()
 
 st.set_page_config(page_title="Credit Risk Assessment App")
 st.title("💳 Credit Risk Assessment App")
@@ -17,10 +21,10 @@ This app predicts the **risk of loan default** using a machine learning model (R
 - **Updated Risk**: Adjusted risk after missed EMI using Bayes' Theorem.
 """)
 
-with st.expander("🧠 What do these fields mean?"):
+with st.expander("🧠 What Do These Fields Mean?"):
     st.markdown("""
     - **Loan Amount ($)**: The principal loan amount requested.
-    - **Term**: Duration of the loan (typically 36 or 60 months).
+    - **Term**: Duration of the loan (36 or 60 months).
     - **Interest Rate (%)**: Annual interest rate on the loan.
     - **Installment ($)**: Monthly payment amount.
     - **Grade**: Credit grade assigned (A to G).
@@ -38,29 +42,17 @@ with st.expander("🧠 What do these fields mean?"):
 st.header("📋 Loan Application Form")
 
 loan_amnt = st.number_input("Loan Amount ($)", min_value=500, max_value=50000, step=500)
-
-# Keep only the options used in training
 term = st.selectbox("Term", options=["36 months", "60 months"])
-
 int_rate = st.slider("Interest Rate (%)", min_value=5.0, max_value=30.0, step=0.1)
 installment = st.number_input("Installment ($)", min_value=50, max_value=2000)
 grade = st.selectbox("Grade", options=['A','B','C','D','E','F','G'])
-
-emp_length = st.selectbox("Employment Length", options=[
-    "< 1 year", "1 year", "2 years", "3 years", "4 years", "5 years",
-    "6 years", "7 years", "8 years", "9 years", "10+ years"
-])
-
-# Confirmed: home_ownership is correct here, NOT loan_ownership
+emp_length = st.selectbox("Employment Length", options=["< 1 year","1 year","2 years","3 years","4 years","5 years","6 years","7 years","8 years","9 years","10+ years"])
 home_ownership = st.selectbox("Home Ownership", options=['MORTGAGE','RENT','OWN','OTHER'])
-
 annual_inc = st.number_input("Annual Income ($)", min_value=10000, max_value=500000, step=1000)
-
 purpose = st.selectbox("Purpose of Loan", options=[
     'credit_card', 'car', 'small_business', 'wedding', 'debt_consolidation',
     'home_improvement', 'major_purchase', 'medical', 'vacation', 'house', 'moving'
 ])
-
 dti = st.slider("Debt-to-Income Ratio", min_value=0.0, max_value=50.0, step=0.1)
 delinq_2yrs = st.number_input("Delinquencies (past 2 yrs)", min_value=0, max_value=10)
 open_acc = st.number_input("Open Credit Lines", min_value=0, max_value=50)
@@ -88,10 +80,11 @@ if st.button("📊 Predict Risk"):
     }
     df_input = pd.DataFrame([input_dict])
 
-    for col in ['term', 'grade', 'emp_length', 'home_ownership', 'purpose']:
-        df_input[col] = label_encoders[col].transform(df_input[col])
-
     try:
+        for col in ['term','grade','emp_length','home_ownership','purpose']:
+            le = label_encoders[col]
+            df_input[col] = le.transform(df_input[col])
+
         prior_risk = rf.predict_proba(df_input)[0][1]
 
         P_prior = prior_risk
@@ -105,7 +98,7 @@ if st.button("📊 Predict Risk"):
         else:
             updated_risk = prior_risk
 
-        st.subheader("📈 Prediction Results")
+        st.subheader("📊 Prediction Results")
         st.success(f"🔵 Prior Risk (Random Forest): {prior_risk:.3f}")
         st.info(f"🟠 Updated Risk (Bayesian): {updated_risk:.3f}")
 
