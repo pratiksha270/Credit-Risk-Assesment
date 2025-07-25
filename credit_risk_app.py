@@ -17,39 +17,35 @@ This app predicts the **risk of loan default** using a machine learning model (R
 - **Updated Risk**: Adjusted risk after missed EMI using Bayes' Theorem.
 """)
 
-with st.expander("🧠 What do these fields mean?"):
+with st.expander("🧠 What do the fields mean?"):
     st.markdown("""
     - **Loan Amount ($)**: The principal loan amount requested.
-    - **Term**: Duration of the loan (36 or 60 months).
+    - **Term**: Duration of the loan (e.g., 36 or 60 months).
     - **Interest Rate (%)**: Annual interest rate on the loan.
     - **Installment ($)**: Monthly payment amount.
     - **Grade**: Credit grade assigned (A to G).
-    - **Employment Length**: Number of years the applicant has been employed.
+    - **Employment Length**: Years the applicant has been employed.
     - **Home Ownership**: Applicant's home ownership status.
-    - **Annual Income ($)**: Yearly income declared by the applicant.
-    - **Purpose of Loan**: Reason the applicant is requesting the loan.
-    - **Debt-to-Income Ratio**: Ratio of debt to income.
-    - **Delinquencies (past 2 yrs)**: Number of past payment defaults.
-    - **Open Credit Lines**: Active lines of credit.
-    - **Revolving Utilization (%)**: Credit utilization percentage.
-    - **Total Credit Accounts**: Total number of credit accounts.
+    - **Annual Income ($)**: Applicant’s yearly income.
+    - **Purpose of Loan**: Reason the applicant is taking the loan.
+    - **Debt-to-Income Ratio**: Lower ratio is generally safer.
+    - **Delinquencies (past 2 yrs)**: Count of past payment defaults.
+    - **Open Credit Lines**: Number of active credit lines.
+    - **Revolving Utilization (%)**: Credit utilization rate.
+    - **Total Credit Accounts**: Total credit accounts held.
     """)
 
 st.header("📋 Loan Application Form")
 
 loan_amnt = st.number_input("Loan Amount ($)", min_value=500, max_value=50000, step=500)
-term = st.selectbox("Term", options=["36 months", "60 months"])
+term = st.selectbox("Term", options=label_encoders['term'].classes_)
 int_rate = st.slider("Interest Rate (%)", min_value=5.0, max_value=30.0, step=0.1)
 installment = st.number_input("Installment ($)", min_value=50, max_value=2000)
-grade = st.selectbox("Grade", options=['A','B','C','D','E','F','G'])
-emp_length = st.selectbox("Employment Length", options=["< 1 year","1 year","2 years","3 years","4 years","5 years","6 years","7 years","8 years","9 years","10+ years"])
-home_ownership = st.selectbox("Home Ownership", options=['MORTGAGE','RENT','OWN','OTHER','ANY','NONE'])
+grade = st.selectbox("Grade", options=label_encoders['grade'].classes_)
+emp_length = st.selectbox("Employment Length", options=label_encoders['emp_length'].classes_)
+home_ownership = st.selectbox("Home Ownership", options=label_encoders['home_ownership'].classes_)
 annual_inc = st.number_input("Annual Income ($)", min_value=10000, max_value=500000, step=1000)
-purpose = st.selectbox("Purpose of Loan", options=[
-    'credit_card', 'car', 'small_business', 'wedding', 'debt_consolidation',
-    'home_improvement', 'major_purchase', 'medical', 'vacation', 'house', 'moving',
-    'other', 'educational', 'renewable_energy'
-])
+purpose = st.selectbox("Purpose of Loan", options=label_encoders['purpose'].classes_)
 dti = st.slider("Debt-to-Income Ratio", min_value=0.0, max_value=50.0, step=0.1)
 delinq_2yrs = st.number_input("Delinquencies (past 2 yrs)", min_value=0, max_value=10)
 open_acc = st.number_input("Open Credit Lines", min_value=0, max_value=50)
@@ -77,12 +73,11 @@ if st.button("📊 Predict Risk"):
     }
     df_input = pd.DataFrame([input_dict])
 
-    for col in ['term','grade','emp_length','home_ownership','purpose']:
-        le = label_encoders[col]
-        df_input[col] = df_input[col].apply(lambda x: x.strip() if isinstance(x, str) else x)
-        df_input[col] = le.transform(df_input[col])
-
     try:
+        for col in ['term', 'grade', 'emp_length', 'home_ownership', 'purpose']:
+            le = label_encoders[col]
+            df_input[col] = le.transform(df_input[col])
+
         prior_risk = rf.predict_proba(df_input)[0][1]
 
         P_prior = prior_risk
