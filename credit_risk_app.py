@@ -1,63 +1,89 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 import joblib
+import numpy as np
+import pandas as pd
 
-# Load your trained model and encoders
-rf = joblib.load("rf_model.joblib")  # Make sure this file is saved from Colab
-le_dict = joblib.load("label_encoders.joblib")  # Dictionary of LabelEncoders
+# Load model and encoders
+rf = joblib.load("rf_model.joblib")
+label_encoders = joblib.load("label_encoders.joblib")
 
-# Define Bayes' update function
-def bayesian_update(prior, p_evidence_given_default, p_evidence):
-    if p_evidence == 0:
-        return prior
-    return (p_evidence_given_default * prior) / p_evidence
+st.set_page_config(page_title="Credit Risk Assessment App")
+st.title("💳 Credit Risk Assessment App")
 
-# Pre-calculated from your training data
-P_EVIDENCE_GIVEN_DEFAULT = 0.21  # Example: P(missed EMI | default)
-P_EVIDENCE = 0.19  # Example: P(missed EMI overall)
+st.markdown("""
+This app predicts the **risk of loan default** using a machine learning model (Random Forest) and adjusts it using **Bayesian probability** if a borrower has missed an EMI (Equated Monthly Installment).
 
-st.title("Credit Risk Assessment App")
-st.write("Enter loan applicant information to assess default risk:")
+### 🧾 How it works
+- **Prior Risk**: Risk estimated based on loan details using ML model.
+- **Updated Risk**: Adjusted risk after missed EMI using Bayes' Theorem.
+""")
 
-# User inputs
-loan_amnt = st.number_input("Loan Amount ($)", 500, 50000, 15000)
-int_rate = st.slider("Interest Rate (%)", 5.0, 30.0, 18.0)
-annual_inc = st.number_input("Annual Income ($)", 10000, 200000, 45000)
-dti = st.slider("Debt-to-Income Ratio (%)", 0.0, 50.0, 20.0)
-delinq_2yrs = st.number_input("Delinquencies in Last 2 Years", 0, 10, 0)
-grade = st.selectbox("Grade", options=le_dict['grade'].classes_)
-emp_length = st.selectbox("Employment Length", options=le_dict['emp_length'].classes_)
-home_ownership = st.selectbox("Home Ownership", options=le_dict['home_ownership'].classes_)
-purpose = st.selectbox("Purpose of Loan", options=le_dict['purpose'].classes_)
-open_acc = st.number_input("Open Credit Accounts", 0, 50, 6)
-revol_util = st.slider("Revolving Credit Utilization (%)", 0.0, 100.0, 40.0)
+st.header("📋 Loan Application Form")
 
-# Prediction trigger
-if st.button("Predict Risk"):
-    # Create input DataFrame
-    input_data = pd.DataFrame([{
+# Input fields
+loan_amnt = st.number_input("Loan Amount ($)", min_value=500, max_value=50000, step=500)
+term = st.selectbox("Term", options=["36 months", "60 months"])
+int_rate = st.slider("Interest Rate (%)", min_value=5.0, max_value=30.0, step=0.1)
+installment = st.number_input("Installment ($)", min_value=50, max_value=2000)
+grade = st.selectbox("Grade", options=['A','B','C','D','E','F','G'])
+emp_length = st.selectbox("Employment Length", options=["< 1 year","1 year","2 years","3 years","4 years","5 years","6 years","7 years","8 years","9 years","10+ years"])
+home_ownership = st.selectbox("Home Ownership", options=['MORTGAGE','RENT','OWN','OTHER'])
+annual_inc = st.number_input("Annual Income ($)", min_value=10000, max_value=500000, step=1000)
+purpose = st.selectbox("Purpose of Loan", options=[
+    'credit_card', 'car', 'small_business', 'wedding', 'debt_consolidation',
+    'home_improvement', 'major_purchase', 'medical', 'vacation', 'house', 'moving'
+])
+dti = st.slider("Debt-to-Income Ratio", min_value=0.0, max_value=50.0, step=0.1)
+delinq_2yrs = st.number_input("Delinquencies (past 2 yrs)", min_value=0, max_value=10)
+open_acc = st.number_input("Open Credit Lines", min_value=0, max_value=50)
+revol_util = st.slider("Revolving Utilization (%)", min_value=0.0, max_value=150.0, step=0.1)
+total_acc = st.number_input("Total Credit Accounts", min_value=1, max_value=100)
+
+missed_emi = st.radio("Has the borrower missed an EMI?", options=["Yes", "No"])
+
+if st.button("📊 Predict Risk"):
+    # Prepare input
+    input_dict = {
         'loan_amnt': loan_amnt,
+        'term': term,
         'int_rate': int_rate,
+        'installment': installment,
+        'grade': grade,
+        'emp_length': emp_length,
+        'home_ownership': home_ownership,
         'annual_inc': annual_inc,
+        'purpose': purpose,
         'dti': dti,
         'delinq_2yrs': delinq_2yrs,
-        'grade': le_dict['grade'].transform([grade])[0],
-        'emp_length': le_dict['emp_length'].transform([emp_length])[0],
-        'home_ownership': le_dict['home_ownership'].transform([home_ownership])[0],
-        'purpose': le_dict['purpose'].transform([purpose])[0],
         'open_acc': open_acc,
-        'revol_util': revol_util
-    }])
+        'revol_util': revol_util,
+        'total_acc': total_acc
+    }
+    df_input = pd.DataFrame([input_dict])
 
-    # Predict with RandomForest
-    prior_risk = rf.predict_proba(input_data)[0][1]
-    missed_emi = delinq_2yrs > 0
-    updated_risk = bayesian_update(prior_risk, P_EVIDENCE_GIVEN_DEFAULT, P_EVIDENCE) if missed_emi else prior_risk
+    # Encode categorical
+    for col in ['term','grade','emp_length','home_ownership','purpose']:
+        le = label_encoders[col]
+        df_input[col] = le.transform(df_input[col])
 
-    # Output results
-    st.success(f"Predicted Prior Risk of Default: {prior_risk:.2%}")
-    if missed_emi:
-        st.warning(f"Updated Risk After Missed EMI: {updated_risk:.2%}")
-    else:
-        st.info("No missed EMI history — risk unchanged.")
+    try:
+        prior_risk = rf.predict_proba(df_input)[0][1]  # Probability of default
+
+        # Apply Bayesian update
+        P_prior = prior_risk
+        P_miss_given_default = 0.85
+        P_miss_given_no_default = 0.25
+
+        if missed_emi == "Yes":
+            numerator = P_miss_given_default * P_prior
+            denominator = (P_miss_given_default * P_prior) + (P_miss_given_no_default * (1 - P_prior))
+            updated_risk = numerator / denominator
+        else:
+            updated_risk = prior_risk
+
+        st.subheader("📊 Prediction Results")
+        st.success(f"🔵 Prior Risk (Random Forest): {prior_risk:.3f}")
+        st.info(f"🟠 Updated Risk (Bayesian): {updated_risk:.3f}")
+
+    except Exception as e:
+        st.error(f"Prediction failed: {e}")
