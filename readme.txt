@@ -1,4 +1,6 @@
 Credit Risk Assessment using Machine Learning and Bayesian Updating
+# Credit Risk Assessment using Machine Learning and Bayesian Updating
+
 ### 🔗 Live Demo
 
 [![Streamlit App](https://img.shields.io/badge/🚀_Try_App_on-Streamlit-orange?logo=streamlit&logoColor=white)](https://cfd9dvmd8wjccygatqevhr.streamlit.app/)
