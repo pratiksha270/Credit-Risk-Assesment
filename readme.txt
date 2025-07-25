@@ -1,4 +1,10 @@
 Credit Risk Assessment using Machine Learning and Bayesian Updating
+### 🔗 Live Demo
+
+[![Streamlit App](https://img.shields.io/badge/🚀_Try_App_on-Streamlit-orange?logo=streamlit&logoColor=white)](https://cfd9dvmd8wjccygatqevhr.streamlit.app/)
+
+👉 Click the badge above to **interact with the Credit Risk Assessment App** and predict the risk of loan default using real-time inputs.
+
 This project is a Credit Risk Assessment system that predicts the probability of a loan applicant defaulting using:
 Random Forest Classifier
 Bayesian Updating for risk refinement
