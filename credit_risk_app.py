@@ -3,7 +3,6 @@ import joblib
 import numpy as np
 import pandas as pd
 
-# Load model and encoders
 rf = joblib.load("rf_model.joblib")
 label_encoders = joblib.load("label_encoders.joblib")
 
@@ -16,11 +15,26 @@ This app predicts the **risk of loan default** using a machine learning model (R
 ### 🧾 How it works
 - **Prior Risk**: Risk estimated based on loan details using ML model.
 - **Updated Risk**: Adjusted risk after missed EMI using Bayes' Theorem.
+
+### 📝 What Each Field Means:
+- **Loan Amount ($)**: The principal loan amount requested.
+- **Term**: Duration of the loan (36 or 60 months).
+- **Interest Rate (%)**: Annual interest rate on the loan.
+- **Installment ($)**: Monthly payment amount.
+- **Grade**: Credit grade assigned (A to G).
+- **Employment Length**: Number of years the applicant has been employed.
+- **Home Ownership**: Applicant's home ownership status.
+- **Annual Income ($)**: Yearly income declared by the applicant.
+- **Purpose of Loan**: Reason the applicant is requesting the loan.
+- **Debt-to-Income Ratio**: Ratio of debt to income (lower is better).
+- **Delinquencies (past 2 yrs)**: Number of past payment defaults.
+- **Open Credit Lines**: Active lines of credit.
+- **Revolving Utilization (%)**: Credit utilization percentage.
+- **Total Credit Accounts**: Total number of credit accounts.
 """)
 
 st.header("📋 Loan Application Form")
 
-# Input fields
 loan_amnt = st.number_input("Loan Amount ($)", min_value=500, max_value=50000, step=500)
 term = st.selectbox("Term", options=["36 months", "60 months"])
 int_rate = st.slider("Interest Rate (%)", min_value=5.0, max_value=30.0, step=0.1)
@@ -42,7 +56,6 @@ total_acc = st.number_input("Total Credit Accounts", min_value=1, max_value=100)
 missed_emi = st.radio("Has the borrower missed an EMI?", options=["Yes", "No"])
 
 if st.button("📊 Predict Risk"):
-    # Prepare input
     input_dict = {
         'loan_amnt': loan_amnt,
         'term': term,
@@ -61,15 +74,13 @@ if st.button("📊 Predict Risk"):
     }
     df_input = pd.DataFrame([input_dict])
 
-    # Encode categorical
     for col in ['term','grade','emp_length','home_ownership','purpose']:
         le = label_encoders[col]
         df_input[col] = le.transform(df_input[col])
 
     try:
-        prior_risk = rf.predict_proba(df_input)[0][1]  # Probability of default
+        prior_risk = rf.predict_proba(df_input)[0][1]
 
-        # Apply Bayesian update
         P_prior = prior_risk
         P_miss_given_default = 0.85
         P_miss_given_no_default = 0.25
@@ -84,6 +95,16 @@ if st.button("📊 Predict Risk"):
         st.subheader("📊 Prediction Results")
         st.success(f"🔵 Prior Risk (Random Forest): {prior_risk:.3f}")
         st.info(f"🟠 Updated Risk (Bayesian): {updated_risk:.3f}")
+
+        st.markdown("""
+---
+### ℹ️ About the Prediction
+- **Prior Risk** is calculated using a Random Forest model trained on historical loan data.
+- **Updated Risk** adjusts this estimate using Bayes' Theorem based on whether an EMI was missed.
+- This method offers both **historical model accuracy** and **real-time behavioral adjustment**.
+
+This app is for demo and educational purposes only.
+""")
 
     except Exception as e:
         st.error(f"Prediction failed: {e}")
