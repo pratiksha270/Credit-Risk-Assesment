@@ -7,17 +7,17 @@ rf = joblib.load("rf_model.joblib")
 label_encoders = joblib.load("label_encoders.joblib")
 
 st.set_page_config(page_title="Credit Risk Assessment App")
-st.title("💳 Credit Risk Assessment App")
+st.title("Credit Risk Assessment App")
 
 st.markdown("""
 This app predicts the **risk of loan default** using a machine learning model (Random Forest) and adjusts it using **Bayesian probability** if a borrower has missed an EMI (Equated Monthly Installment).
 
-### 🧾 How it works
+### How it works
 - **Prior Risk**: Risk estimated based on loan details using ML model.
 - **Updated Risk**: Adjusted risk after missed EMI using Bayes' Theorem.
 """)
 
-with st.expander("🧠 What do the fields mean?"):
+with st.expander("What do the fields mean?"):
     st.markdown("""
     - **Loan Amount ($)**: The principal loan amount requested.
     - **Term**: Duration of the loan (e.g., 36 or 60 months).
@@ -35,7 +35,7 @@ with st.expander("🧠 What do the fields mean?"):
     - **Total Credit Accounts**: Total credit accounts held.
     """)
 
-st.header("📋 Loan Application Form")
+st.header("Loan Application Form")
 
 loan_amnt = st.number_input("Loan Amount ($)", min_value=500, max_value=50000, step=500)
 term = st.selectbox("Term", options=label_encoders['term'].classes_)
@@ -54,7 +54,7 @@ total_acc = st.number_input("Total Credit Accounts", min_value=1, max_value=100)
 
 missed_emi = st.radio("Has the borrower missed an EMI?", options=["Yes", "No"])
 
-if st.button("📊 Predict Risk"):
+if st.button("Predict Risk"):
     input_dict = {
         'loan_amnt': loan_amnt,
         'term': term,
@@ -91,7 +91,7 @@ if st.button("📊 Predict Risk"):
         else:
             updated_risk = prior_risk
 
-        st.subheader("📊 Prediction Results")
+        st.subheader("Prediction Results")
         st.success(f"🔵 Prior Risk (Random Forest): {prior_risk:.3f}")
         st.info(f"🟠 Updated Risk (Bayesian): {updated_risk:.3f}")
 
