@@ -1,6 +1,6 @@
 streamlit
 pandas
-numpy
+numpy==1.23.5
 scikit-learn
 joblib
 shap==0.41.0
