@@ -1,67 +1,62 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 import joblib
-from datetime import datetime
+import numpy as np
+import pandas as pd
 
-# Load model and label encoders
+# Load model and encoders
 rf = joblib.load("rf_model.joblib")
 label_encoders = joblib.load("label_encoders.joblib")
 
-st.set_page_config(page_title="Credit Risk Assessment", layout="centered")
-
+st.set_page_config(page_title="Credit Risk Assessment App")
 st.title("Credit Risk Assessment App")
-st.markdown("""
-This app predicts the risk of loan default using a machine learning model and adjusts the risk using Bayes' Theorem if a borrower misses an EMI.
 
-- **Prior Risk**: Based on initial loan details.
-- **Adjusted Risk**: Updated risk if EMI is missed.
+st.markdown("""
+This app predicts the risk of loan default using a machine learning model (Random Forest) and adjusts it using Bayes' Theorem if the borrower has missed an EMI (Equated Monthly Installment).
+
+How it works:
+- Prior Risk: Risk estimated based on loan details using a trained ML model.
+- Adjusted Risk: Recalculated based on EMI miss information using Bayes’ Theorem.
 """)
 
 with st.expander("What do the fields mean?"):
     st.markdown("""
-    - **Loan Amount**: Principal amount requested by borrower.
-    - **Term**: Duration of the loan (36 or 60 months).
-    - **Interest Rate**: Annual interest rate on the loan.
-    - **Installment**: Monthly payment amount.
-    - **Grade**: LendingClub assigned credit grade.
-    - **Employment Length**: Years of employment.
-    - **Home Ownership**: Borrower’s home ownership status.
-    - **Annual Income**: Reported yearly income.
-    - **Purpose**: Reason for the loan.
-    - **DTI**: Debt-to-income ratio.
-    - **Delinquencies**: Past delinquencies in 2 years.
-    - **Open Credit Lines**: Active credit lines.
-    - **Revolving Utilization**: Utilized revolving credit.
-    - **Total Accounts**: Total number of credit lines.
+- **Loan Amount ($)**: The loan principal requested.
+- **Term**: Duration of the loan.
+- **Interest Rate (%)**: Annual rate charged.
+- **Installment ($)**: Monthly EMI.
+- **Grade**: Credit quality grade.
+- **Employment Length**: How long the applicant has been employed.
+- **Home Ownership**: Whether the applicant rents or owns their home.
+- **Annual Income ($)**: Declared income.
+- **Purpose**: Reason for the loan.
+- **Debt-to-Income Ratio**: Debt percentage relative to income.
+- **Delinquencies (past 2 yrs)**: Number of payment defaults.
+- **Open Credit Lines**: Active lines of credit.
+- **Revolving Utilization (%)**: Utilization of revolving credit.
+- **Total Credit Accounts**: Total number of credit accounts.
     """)
 
 st.header("Loan Application Form")
 
-# Input fields
-loan_amnt = st.number_input("Loan Amount ($)", value=15000, step=500)
-term = st.selectbox("Term", options=[' 36 months', ' 60 months'])
-int_rate = st.slider("Interest Rate (%)", 5.0, 30.0, step=0.1)
-installment = st.number_input("Installment ($)", value=450)
+loan_amnt = st.number_input("Loan Amount ($)", min_value=500, max_value=50000, step=500)
+term = st.selectbox("Term", options=[" 36 months", " 60 months"])
+int_rate = st.slider("Interest Rate (%)", min_value=5.0, max_value=30.0, step=0.1)
+installment = st.number_input("Installment ($)", min_value=50, max_value=2000)
 grade = st.selectbox("Grade", options=['A','B','C','D','E','F','G'])
-emp_length = st.selectbox("Employment Length", options=[
-    '1 year', '2 years', '3 years', '4 years', '5 years', '6 years',
-    '7 years', '8 years', '9 years', '10+ years', '< 1 year'
-])
-home_ownership = st.selectbox("Home Ownership", options=[
-    'MORTGAGE', 'RENT', 'OWN', 'OTHER', 'ANY', 'NONE'
-])
-annual_inc = st.number_input("Annual Income ($)", value=65000, step=1000)
+emp_length = st.selectbox("Employment Length", options=["< 1 year","1 year","2 years","3 years","4 years","5 years","6 years","7 years","8 years","9 years","10+ years"])
+home_ownership = st.selectbox("Home Ownership", options=['MORTGAGE','RENT','OWN','OTHER','NONE','ANY'])
+annual_inc = st.number_input("Annual Income ($)", min_value=10000, max_value=500000, step=1000)
 purpose = st.selectbox("Purpose", options=[
     'credit_card', 'car', 'small_business', 'wedding', 'debt_consolidation',
-    'home_improvement', 'major_purchase', 'medical', 'vacation', 'house',
-    'moving', 'educational', 'renewable_energy', 'other'
+    'home_improvement', 'major_purchase', 'medical', 'vacation', 'house', 'moving',
+    'educational', 'renewable_energy', 'other'
 ])
-dti = st.slider("Debt-to-Income Ratio", 0.0, 50.0, step=0.1)
+dti = st.slider("Debt-to-Income Ratio", min_value=0.0, max_value=50.0, step=0.1)
 delinq_2yrs = st.number_input("Delinquencies (past 2 yrs)", min_value=0, max_value=10)
 open_acc = st.number_input("Open Credit Lines", min_value=0, max_value=50)
-revol_util = st.slider("Revolving Utilization (%)", 0.0, 150.0, step=0.1)
+revol_util = st.slider("Revolving Utilization (%)", min_value=0.0, max_value=150.0, step=0.1)
 total_acc = st.number_input("Total Credit Accounts", min_value=1, max_value=100)
+
 missed_emi = st.radio("Has the borrower missed an EMI?", options=["Yes", "No"])
 
 if st.button("Predict Risk"):
@@ -81,16 +76,15 @@ if st.button("Predict Risk"):
         'revol_util': revol_util,
         'total_acc': total_acc
     }
-
-    input_df = pd.DataFrame([input_dict])
-
-    # Encode categorical fields
-    for col in ['term', 'grade', 'emp_length', 'home_ownership', 'purpose']:
-        encoder = label_encoders[col]
-        input_df[col] = encoder.transform(input_df[col])
+    df_input = pd.DataFrame([input_dict])
 
     try:
-        prior_risk = rf.predict_proba(input_df)[0][1]
+        for col in ['term','grade','emp_length','home_ownership','purpose']:
+            le = label_encoders[col]
+            df_input[col] = le.transform(df_input[col])
+
+        prior_risk = rf.predict_proba(df_input)[0][1]
+
         P_prior = prior_risk
         P_miss_given_default = 0.85
         P_miss_given_no_default = 0.25
@@ -103,28 +97,15 @@ if st.button("Predict Risk"):
             updated_risk = prior_risk
 
         st.subheader("Prediction Results")
-        st.success(f"Prior Risk (Before EMI): {prior_risk:.3f}")
-        st.info(f"Adjusted Risk (After EMI Status): {updated_risk:.3f}")
+        st.success(f"Prior Risk (ML Model): {prior_risk:.3f}")
+        st.info(f"Adjusted Risk (after EMI check): {updated_risk:.3f}")
 
-        verdict = (
-            "⚠️ High Risk - Likely to default." if updated_risk > 0.5 else
-            "✅ Low Risk - Unlikely to default."
-        )
-        st.warning(verdict)
-
-        # CSV Export
-        result_data = input_dict.copy()
-        result_data["prior_risk"] = prior_risk
-        result_data["adjusted_risk"] = updated_risk
-        result_data["emi_missed"] = missed_emi
-        df_result = pd.DataFrame([result_data])
-        csv = df_result.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Download Prediction as CSV",
-            data=csv,
-            file_name=f"credit_risk_prediction_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime='text/csv'
-        )
+        if updated_risk >= 0.7:
+            st.error("Verdict: HIGH RISK of default. Not recommended.")
+        elif updated_risk >= 0.4:
+            st.warning("Verdict: MODERATE RISK. Consider further evaluation.")
+        else:
+            st.success("Verdict: LOW RISK. Loan approval likely.")
 
     except Exception as e:
         st.error(f"Prediction failed: {e}")
