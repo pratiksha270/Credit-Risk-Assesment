@@ -19,4 +19,4 @@ Delivered a functional credit risk model deployable as a web app.
 Implemented real-world credit features like term, grade, employment history, purpose of loan, etc.
 Gained hands-on experience in building production-ready ML pipelines and communicating predictive results through intuitive UI.
 
-Live Demo: https://cfd9dvmd8wjccygatqevhr.streamlit.app/
+Live Demo: https://ku6u4xnt5tb3frl93rpmoj.streamlit.app/
