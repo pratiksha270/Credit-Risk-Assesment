@@ -52,24 +52,24 @@ if sample_option == "Low Risk Applicant":
         'total_acc': 28,
         'missed_emi': "No"
     }
-elif sample_option == "Moderate Risk Applicant":
-    inputs = {
-        'loan_amnt': 15000,
-        'term': ' 36 months',
-        'int_rate': 13.0,
-        'installment': 450,
-        'grade': 'C',
-        'emp_length': '5 years',
-        'home_ownership': 'RENT',
-        'annual_inc': 60000,
-        'purpose': 'debt_consolidation',
-        'dti': 18.0,
-        'delinq_2yrs': 1,
-        'open_acc': 6,
-        'revol_util': 55.0,
-        'total_acc': 22,
-        'missed_emi': "Yes"
-    }
+elif scenario == "Moderate Risk Applicant":
+inputs = {
+    loan_amnt = 10000
+    term = " 36 months"
+    int_rate = 13.5
+    installment = 350
+    grade = 'C'
+    emp_length = "3 years"
+    home_ownership = "RENT"
+    annual_inc = 45000
+    purpose = "home_improvement"
+    dti = 22.0
+    delinq_2yrs = 0
+    open_acc = 5
+    revol_util = 40.0
+    total_acc = 18
+    missed_emi = "No"
+}
 elif sample_option == "High Risk Applicant":
     inputs = {
         'loan_amnt': 25000,
